@@ -1,0 +1,377 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  username      String   @unique
+  displayName   String
+  avatar        String?
+  bio           String?
+  githubUrl     String?
+  linkedinUrl   String?
+  websiteUrl    String?
+  languages     String[]
+  skillLevel    SkillLevel @default(BEGINNER)
+  rating        Int      @default(1000)
+  totalSessions Int      @default(0)
+  problemsSolved Int     @default(0)
+  streak        Int      @default(0)
+  coins         Int      @default(0)
+  passwordHash  String
+  refreshToken  String?
+  emailVerified Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  hostedSessions      CodingSession[]     @relation("SessionHost")
+  participations      SessionParticipant[]
+  achievements        UserAchievement[]
+  codeExecutions      CodeExecution[]
+  messages            Message[]
+  competitionEntries  CompetitionEntry[]
+  leaderboardEntries  LeaderboardEntry[]
+  followers           Follow[]            @relation("Follower")
+  following           Follow[]            @relation("Following")
+
+  @@map("users")
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  icon        String
+  rarity      Rarity   @default(COMMON)
+  category    String
+  condition   String   // JSON string describing unlock condition
+  points      Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+  progress      Int      @default(100)
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+model CodingSession {
+  id                  String        @id @default(cuid())
+  title               String
+  type                SessionType   @default(PRACTICE)
+  status              SessionStatus @default(WAITING)
+  maxParticipants     Int           @default(4)
+  currentParticipants Int           @default(0)
+  language            String        @default("javascript")
+  difficulty          Difficulty    @default(MEDIUM)
+  timeLimit           Int?          // in minutes
+  currentCode         String        @default("")
+  activeUserId        String?
+  hostId              String
+  challengeId         String?
+  isPrivate           Boolean       @default(false)
+  inviteCode          String?       @unique
+  createdAt           DateTime      @default(now())
+  startedAt           DateTime?
+  endedAt             DateTime?
+  lastActivity        DateTime      @default(now())
+
+  // Relations
+  host         User                 @relation("SessionHost", fields: [hostId], references: [id], onDelete: Cascade)
+  challenge    Challenge?           @relation(fields: [challengeId], references: [id], onDelete: SetNull)
+  participants SessionParticipant[]
+  messages     Message[]
+  executions   CodeExecution[]
+
+  @@map("coding_sessions")
+}
+
+model SessionParticipant {
+  id         String    @id @default(cuid())
+  userId     String
+  sessionId  String
+  joinedAt   DateTime  @default(now())
+  leftAt     DateTime?
+  score      Int?
+  timeToSolve Int?     // in seconds
+  isReady    Boolean   @default(false)
+  isActive   Boolean   @default(true)
+
+  // Relations
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session CodingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sessionId])
+  @@map("session_participants")
+}
+
+model Challenge {
+  id             String   @id @default(cuid())
+  title          String
+  description    String
+  difficulty     Difficulty
+  category       String[]
+  tags           String[]
+  examples       Json     // TestCase[]
+  constraints    String[]
+  hints          String[]
+  solution       String?
+  timeComplexity String?
+  spaceComplexity String?
+  popularity     Int      @default(0)
+  successRate    Float    @default(0.0)
+  totalAttempts  Int      @default(0)
+  totalSolved    Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  sessions     CodingSession[]
+  executions   CodeExecution[]
+  competitions CompetitionChallenge[]
+
+  @@map("challenges")
+}
+
+model CodeExecution {
+  id           String          @id @default(cuid())
+  sessionId    String
+  userId       String
+  challengeId  String?
+  code         String
+  language     String
+  input        String?
+  output       String?
+  error        String?
+  executionTime Int?           // in milliseconds
+  memoryUsage  Int?           // in KB
+  status       ExecutionStatus @default(PENDING)
+  testsPassed  Int             @default(0)
+  totalTests   Int             @default(0)
+  createdAt    DateTime        @default(now())
+
+  // Relations
+  session   CodingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge Challenge?    @relation(fields: [challengeId], references: [id], onDelete: SetNull)
+
+  @@map("code_executions")
+}
+
+model Message {
+  id        String      @id @default(cuid())
+  sessionId String
+  userId    String
+  content   String
+  type      MessageType @default(TEXT)
+  timestamp DateTime    @default(now())
+
+  // Relations
+  session CodingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Competition {
+  id                  String            @id @default(cuid())
+  title               String
+  description         String
+  type                CompetitionType   @default(WEEKLY)
+  status              CompetitionStatus @default(UPCOMING)
+  startDate           DateTime
+  endDate             DateTime
+  maxParticipants     Int?
+  currentParticipants Int               @default(0)
+  rules               String[]
+  isPublic            Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  // Relations
+  challenges     CompetitionChallenge[]
+  entries        CompetitionEntry[]
+  leaderboard    LeaderboardEntry[]
+  prizes         Prize[]
+
+  @@map("competitions")
+}
+
+model CompetitionChallenge {
+  id            String @id @default(cuid())
+  competitionId String
+  challengeId   String
+  order         Int
+  points        Int    @default(100)
+
+  // Relations
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  challenge   Challenge   @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([competitionId, challengeId])
+  @@map("competition_challenges")
+}
+
+model CompetitionEntry {
+  id            String   @id @default(cuid())
+  userId        String
+  competitionId String
+  joinedAt      DateTime @default(now())
+  isActive      Boolean  @default(true)
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, competitionId])
+  @@map("competition_entries")
+}
+
+model LeaderboardEntry {
+  id            String   @id @default(cuid())
+  userId        String
+  competitionId String?
+  rank          Int
+  score         Int
+  timeSpent     Int      // in seconds
+  problemsSolved Int     @default(0)
+  lastSubmission DateTime @default(now())
+  period        String   @default("all-time") // "daily", "weekly", "monthly", "all-time"
+
+  // Relations
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  competition Competition? @relation(fields: [competitionId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, competitionId, period])
+  @@map("leaderboard_entries")
+}
+
+model Prize {
+  id            String    @id @default(cuid())
+  competitionId String
+  rankStart     Int
+  rankEnd       Int
+  title         String
+  description   String
+  value         Int?
+  type          PrizeType @default(COINS)
+  imageUrl      String?
+
+  // Relations
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@map("prizes")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+// Enums
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum Rarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum SessionType {
+  MOCK_INTERVIEW
+  PRACTICE
+  COMPETITION
+  FRIENDLY
+}
+
+enum SessionStatus {
+  WAITING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  ERROR
+  TIMEOUT
+}
+
+enum MessageType {
+  TEXT
+  CODE
+  SYSTEM
+}
+
+enum CompetitionType {
+  WEEKLY
+  MONTHLY
+  SPECIAL
+  TOURNAMENT
+}
+
+enum CompetitionStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum PrizeType {
+  BADGE
+  COINS
+  SUBSCRIPTION
+  MERCHANDISE
+}
