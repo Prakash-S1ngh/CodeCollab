@@ -9,7 +9,8 @@
     "lint": {},
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": ["PORT", "NODE_ENV", "DATABASE_URL", "JWT_SECRET", "JWT_REFRESH_SECRET", "FRONTEND_URL"]
     },
     "db:push": {
       "cache": false

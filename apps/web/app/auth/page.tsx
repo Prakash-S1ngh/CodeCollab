@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 
 export default function AuthPage() {
-  const { signIn, signUp, signInWithGoogle, signInWithGithub, isLoading } = useAuth()
+  const { signIn, signUp, signInWithGoogle, isLoading } = useAuth()
   const router = useRouter()
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
@@ -28,10 +28,13 @@ export default function AuthPage() {
       if (isLogin) {
         await signIn(formData.email, formData.password)
       } else {
+        console.log('signUp', formData.name, formData.email, formData.password)
+
         await signUp(formData.name, formData.email, formData.password)
       }
       router.push('/dashboard')
     } catch (error) {
+      console.log('error', error) 
       setError('Authentication failed. Please try again.')
     }
   }

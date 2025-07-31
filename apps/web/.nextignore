@@ -1,0 +1,4 @@
+app/problems/
+node_modules/
+.next/
+.git/ 

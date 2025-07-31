@@ -12,7 +12,7 @@ const validateSignUp = [
   body('email').isEmail().normalizeEmail(),
   body('username').isLength({ min: 3, max: 20 }).matches(/^[a-zA-Z0-9_]+$/),
   body('displayName').isLength({ min: 2, max: 50 }),
-  body('password').isLength({ min: 6 }),
+  body('password').isLength({ min: 3 }),
 ]
 
 const validateSignIn = [

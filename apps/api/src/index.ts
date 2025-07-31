@@ -33,7 +33,7 @@ const app = express()
 const server = createServer(app)
 const io = new SocketIOServer(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3001",
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -42,17 +42,23 @@ const io = new SocketIOServer(server, {
 // Initialize Prisma
 export const prisma = new PrismaClient()
 
+// Trust proxy for rate limiting
+app.set('trust proxy', 1)
+
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === '/health', // Skip rate limiting for health check
 })
 
 // Middleware
 app.use(helmet())
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3001",
+  origin: process.env.FRONTEND_URL || "http://localhost:3000",
   credentials: true
 }))
 app.use(compression())
@@ -86,7 +92,7 @@ setupSocketHandlers(io)
 app.use(notFound)
 app.use(errorHandler)
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3002
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
