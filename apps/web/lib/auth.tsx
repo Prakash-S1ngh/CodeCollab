@@ -36,40 +36,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      // Check for existing tokens
-      const accessToken = localStorage.getItem('accessToken')
-      const refreshToken = localStorage.getItem('refreshToken')
-      
-      if (accessToken && refreshToken) {
-        // Validate the token by making a request to get user info
-        try {
-          const response = await axios.get('/api/auth/me', {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-            },
-          })
-          
-          if (response.data.success) {
-            const userData = response.data.data.user
-            setUser({
-              id: userData.id,
-              name: userData.displayName,
-              email: userData.email,
-              avatar: userData.avatar
-            })
-          } else {
-            // Clear invalid tokens
-            localStorage.removeItem('accessToken')
-            localStorage.removeItem('refreshToken')
-          }
-        } catch (error) {
-          // Token is invalid, clear it
-          localStorage.removeItem('accessToken')
-          localStorage.removeItem('refreshToken')
-        }
+      // Just call /api/auth/me, cookies will be sent automatically
+      const response = await axios.get('/api/auth/me')
+
+      if (response.data.success) {
+        const userData = response.data.data.user
+        setUser({
+          id: userData.id,
+          name: userData.displayName,
+          email: userData.email,
+          avatar: userData.avatar
+        })
+      } else {
+        setUser(null)
       }
     } catch (error) {
-      console.error('Auth check failed:', error)
+      setUser(null)
+      console.error('Auth check failed:', error.message)
     } finally {
       setIsLoading(false)
     }
@@ -78,27 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     setIsLoading(true)
     try {
-
-      const response = await axios.post('/api/auth/signin', {
-        email,
-        password,
-      })
-
-
-      const { user, accessToken, refreshToken } = response.data.data
-      
-      // Store tokens
-      localStorage.setItem('accessToken', accessToken)
-      localStorage.setItem('refreshToken', refreshToken)
-      
-      setUser({
-        id: user.id,
-        name: user.displayName,
-        email: user.email,
-        avatar: user.avatar
-      })
-      
-
+      await axios.post('/api/auth/signin', { email, password })
+      await checkAuth()
     } catch (error: any) {
       console.error('Sign in failed:', error)
       throw new Error(error.response?.data?.message || 'Sign in failed')
@@ -110,29 +74,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (name: string, email: string, password: string) => {
     setIsLoading(true)
     try {
-
-      const response = await axios.post('/api/auth/signup', {
+      await axios.post('/api/auth/signup', {
         displayName: name,
-        username: email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, ''), // Clean username generation
+        username: email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, ''),
         email,
         password
       })
-
-
-      const { user, accessToken, refreshToken } = response.data.data
-      
-      // Store tokens
-      localStorage.setItem('accessToken', accessToken)
-      localStorage.setItem('refreshToken', refreshToken)
-      
-      setUser({
-        id: user.id,
-        name: user.displayName,
-        email: user.email,
-        avatar: user.avatar
-      })
-      
-
+      await checkAuth()
     } catch (error: any) {
       console.error('Sign up failed:', error)
       throw new Error(error.response?.data?.message || 'Sign up failed')
@@ -144,24 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     setIsLoading(true)
     try {
-      const token = localStorage.getItem('accessToken')
-      if (token) {
-        await axios.post('/api/auth/logout', {}, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        })
-      }
-
-      // Clear tokens regardless of response
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
+      await axios.post('/api/auth/logout')
       setUser(null)
     } catch (error) {
       console.error('Sign out failed:', error)
-      // Still clear tokens on error
-      localStorage.removeItem('accessToken')
-      localStorage.removeItem('refreshToken')
       setUser(null)
     } finally {
       setIsLoading(false)
@@ -171,25 +105,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => {
     setIsLoading(true)
     try {
-      // TODO: Implement Google OAuth
-      console.log('Signing in with Google')
+      // Open Google OAuth popup
+      const width = 500
+      const height = 600
+      const left = window.screenX + (window.outerWidth - width) / 2
+      const top = window.screenY + (window.outerHeight - height) / 2
       
-      // Simulate OAuth flow
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      // Mock user data
-      const mockUser: User = {
-        id: '2',
-        name: 'Google User',
-        email: 'google@example.com',
-        avatar: 'https://avatars.githubusercontent.com/u/2?v=4'
+      const popup = window.open(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002'}/api/auth/google`,
+        'google-oauth',
+        `width=${width},height=${height},left=${left},top=${top}`
+      )
+
+      if (!popup) {
+        throw new Error('Popup blocked. Please allow popups for this site.')
       }
-      
-      setUser(mockUser)
-      // localStorage.setItem('auth_token', 'google_token')
-    } catch (error) {
-      console.error('Google sign in failed:', error)
-      throw error
+
+      // Wait for the popup to close or receive message
+      return new Promise<void>((resolve, reject) => {
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed)
+            reject(new Error('Authentication cancelled'))
+          }
+        }, 1000)
+
+        const messageHandler = async (event: MessageEvent) => {
+          if (event.origin !== (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002')) {
+            return
+          }
+
+          if (event.data.type === 'GOOGLE_AUTH_SUCCESS') {
+            clearInterval(checkClosed)
+            window.removeEventListener('message', messageHandler)
+            popup.close()
+            await checkAuth()
+            resolve()
+          } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
+            clearInterval(checkClosed)
+            window.removeEventListener('message', messageHandler)
+            popup.close()
+            reject(new Error(event.data.error || 'Google authentication failed'))
+          }
+        }
+
+        window.addEventListener('message', messageHandler)
+      })
+    } catch (error: any) {
+      console.error('Google auth error:', error)
+      throw new Error(error.message || 'Google authentication failed')
     } finally {
       setIsLoading(false)
     }

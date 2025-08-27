@@ -4,6 +4,9 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+// In-memory storage for development (same as in auth.ts)
+const mockUsers = new Map()
+
 export interface AuthRequest extends Request {
   user?: any
 }

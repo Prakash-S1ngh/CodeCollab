@@ -9,6 +9,7 @@ import { createServer } from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 import dotenv from 'dotenv'
 import { PrismaClient } from '@prisma/client'
+import passport from 'passport'
 
 // Import routes
 import authRoutes from './routes/auth'
@@ -18,6 +19,7 @@ import challengeRoutes from './routes/challenges'
 import competitionRoutes from './routes/competitions'
 import codeRoutes from './routes/code'
 import uploadRoutes from './routes/upload'
+import problemRoutes from './routes/problems'
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler'
@@ -67,6 +69,12 @@ app.use(limiter)
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 
+// Initialize Passport
+app.use(passport.initialize())
+
+// Serve static files
+app.use('/uploads', express.static('uploads'))
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ 
@@ -84,6 +92,7 @@ app.use('/api/challenges', challengeRoutes)
 app.use('/api/competitions', competitionRoutes)
 app.use('/api/code', codeRoutes)
 app.use('/api/upload', uploadRoutes)
+app.use('/api/problems', problemRoutes)
 
 // Socket.IO setup for video calls
 setupSocketHandlers(io)

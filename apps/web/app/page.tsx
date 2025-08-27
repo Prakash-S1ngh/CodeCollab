@@ -52,7 +52,7 @@ export default function LandingPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary-50/20 to-secondary-50/20 dark:from-background dark:via-primary-950/20 dark:to-secondary-950/20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Navigation */}
       <nav className="relative z-50 px-4 py-6">
         <div className="container mx-auto flex items-center justify-between">
@@ -62,10 +62,10 @@ export default function LandingPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
               <Code className="w-5 h-5 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent font-mono">
               CodeArena
             </span>
           </motion.div>
@@ -73,10 +73,10 @@ export default function LandingPage() {
           <div className="flex items-center space-x-4">
             <ThemeToggle />
             <Link href="/auth">
-              <Button variant="outline" size="sm">Sign In</Button>
+              <Button variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:bg-slate-700">Sign In</Button>
             </Link>
             <Link href="/auth">
-              <Button size="sm" className="neon-glow">Get Started</Button>
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">Get Started</Button>
             </Link>
           </div>
         </div>
@@ -92,20 +92,20 @@ export default function LandingPage() {
             className="max-w-4xl mx-auto"
           >
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
-              <span className="bg-gradient-to-r from-primary-600 via-secondary-600 to-accent-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 bg-clip-text text-transparent font-mono">
                 Code Together
               </span>
               <br />
-              <span className="text-foreground">Win Together</span>
+              <span className="text-slate-100">Win Together</span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-muted-foreground mb-8 leading-relaxed">
+            <p className="text-xl md:text-2xl text-slate-400 mb-8 leading-relaxed">
               Join the ultimate multiplayer coding platform. Practice DSA challenges, 
               participate in mock interviews, and compete with friends in real-time.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link href="/auth">
+              <Link href="/dashboard">
                 <Button size="lg" className="text-lg px-8 py-4 neon-glow group">
                   Start Coding Now
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -289,7 +289,7 @@ export default function LandingPage() {
               Join thousands of developers who are already improving their skills 
               and landing their dream jobs with CodeArena.
             </p>
-            <Link href="/auth">
+            <Link href="/dashboard">
               <Button size="lg" className="text-lg px-12 py-4 neon-glow">
                 Start Your Journey
                 <ArrowRight className="ml-2 w-5 h-5" />

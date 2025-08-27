@@ -158,8 +158,25 @@ model Challenge {
   sessions     CodingSession[]
   executions   CodeExecution[]
   competitions CompetitionChallenge[]
+  testCases    TestCase[]
 
   @@map("challenges")
+}
+
+model TestCase {
+  id             String   @id @default(cuid())
+  challengeId    String
+  input          String
+  expectedOutput String
+  isHidden       Boolean  @default(false)
+  timeLimit      Int      @default(1000) // in milliseconds
+  memoryLimit    Int      @default(128)  // in MB
+  createdAt      DateTime @default(now())
+
+  // Relations
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@map("test_cases")
 }
 
 model CodeExecution {
@@ -344,9 +361,13 @@ enum Difficulty {
 enum ExecutionStatus {
   PENDING
   RUNNING
-  SUCCESS
-  ERROR
-  TIMEOUT
+  ACCEPTED
+  WRONG_ANSWER
+  TIME_LIMIT_EXCEEDED
+  MEMORY_LIMIT_EXCEEDED
+  RUNTIME_ERROR
+  COMPILATION_ERROR
+  SYSTEM_ERROR
 }
 
 enum MessageType {

@@ -23,11 +23,33 @@ export async function POST(request: NextRequest) {
       withCredentials: true,
     })
 
+    // Extract tokens from response
+    const { accessToken, refreshToken, ...rest } = response.data
+    // console.log(response.data);
 
-    return NextResponse.json(response.data, {
+    const res = NextResponse.json(rest, {
       status: response.status,
       statusText: response.statusText,
     })
+
+    if (accessToken) {
+      res.cookies.set('accessToken', accessToken, {
+        httpOnly: true,
+        sameSite:'none',
+        path: '/',
+        maxAge: 60 * 60, // 1 hour
+      })
+    }
+    if (refreshToken) {
+      res.cookies.set('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      })
+    }
+    return res
   } catch (error: any) {
     console.error('API proxy error:', error)
     

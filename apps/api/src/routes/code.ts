@@ -2,9 +2,10 @@ import express from 'express'
 import { body, validationResult } from 'express-validator'
 import { prisma } from '../index'
 import { authenticateToken, AuthRequest } from '../middleware/auth'
-import { executeCode } from '../services/codeExecutor'
+import { codeExecutor } from '../services/codeExecutor'
 
 const router = express.Router()
+const executeCode = codeExecutor.executeCode
 
 // Validation middleware
 const validateCodeExecution = [
@@ -45,7 +46,7 @@ router.post('/execute', authenticateToken, validateCodeExecution, async (req: Au
 
     // Execute the code
     const startTime = Date.now()
-    const executionResult = await executeCode(code, language, [])
+    const executionResult = await executeCode(code, language, '', '', 5000, 128)
     const executionTime = Date.now() - startTime
 
     // Save execution to database
@@ -59,14 +60,14 @@ router.post('/execute', authenticateToken, validateCodeExecution, async (req: Au
         output: executionResult.output,
         error: executionResult.error,
         executionTime,
-        memoryUsage: executionResult.memoryUsage,
-        status: executionResult.status,
-        testsPassed: executionResult.testsPassed,
-        totalTests: executionResult.totalTests
+        memoryUsage: executionResult.memoryUsed,
+        status: executionResult.status as any,
+        testsPassed: 0,
+        totalTests: 0
       }
     })
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         id: execution.id,
@@ -76,13 +77,12 @@ router.post('/execute', authenticateToken, validateCodeExecution, async (req: Au
         executionTime: execution.executionTime,
         memoryUsage: execution.memoryUsage,
         testsPassed: execution.testsPassed,
-        totalTests: execution.totalTests,
-        testResults: executionResult.testResults
+        totalTests: execution.totalTests
       }
     })
   } catch (error) {
     console.error('Code execution error:', error)
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Code execution failed'
     })
@@ -118,7 +118,7 @@ router.get('/executions', authenticateToken, async (req: AuthRequest, res) => {
       where: { userId: req.user.id }
     })
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         executions,
@@ -132,7 +132,7 @@ router.get('/executions', authenticateToken, async (req: AuthRequest, res) => {
     })
   } catch (error) {
     console.error('Get executions error:', error)
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to fetch executions'
     })
@@ -170,13 +170,13 @@ router.get('/executions/:id', authenticateToken, async (req: AuthRequest, res: a
       })
     }
 
-    res.json({
+    return res.json({
       success: true,
       data: { execution }
     })
   } catch (error) {
     console.error('Get execution error:', error)
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to fetch execution'
     })

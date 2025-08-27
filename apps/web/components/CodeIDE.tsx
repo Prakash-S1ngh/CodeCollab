@@ -42,6 +42,9 @@ interface CodeIDEProps {
   language?: string
   onCodeChange?: (code: string) => void
   onRun?: (execution: CodeExecution) => void
+  value?: string
+  onChange?: (code: string) => void
+  theme?: string
 }
 
 const defaultCode = {
@@ -90,15 +93,25 @@ export default function CodeIDE({
   initialCode, 
   language = 'javascript',
   onCodeChange,
-  onRun 
+  onRun,
+  value,
+  onChange,
+  theme = 'vs-dark'
 }: CodeIDEProps) {
-  const [code, setCode] = useState(initialCode || defaultCode[language as keyof typeof defaultCode] || defaultCode.javascript)
+  const [code, setCode] = useState(value || initialCode || defaultCode[language as keyof typeof defaultCode] || defaultCode.javascript)
   const [selectedLanguage, setSelectedLanguage] = useState(language)
   const [execution, setExecution] = useState<CodeExecution | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [activeTab, setActiveTab] = useState<'output' | 'testcases' | 'settings'>('output')
   const [testResults, setTestResults] = useState<any[]>([])
   const editorRef = useRef<any>(null)
+
+  // Update code when value prop changes (for controlled component)
+  useEffect(() => {
+    if (value !== undefined) {
+      setCode(value)
+    }
+  }, [value])
 
   const languages = [
     { id: 'javascript', name: 'JavaScript', extension: '.js' },
@@ -115,6 +128,7 @@ export default function CodeIDE({
     const newCode = value || ''
     setCode(newCode)
     onCodeChange?.(newCode)
+    onChange?.(newCode)
   }
 
   const handleLanguageChange = (newLanguage: string) => {
@@ -122,6 +136,7 @@ export default function CodeIDE({
     const newCode = defaultCode[newLanguage as keyof typeof defaultCode] || defaultCode.javascript
     setCode(newCode)
     onCodeChange?.(newCode)
+    onChange?.(newCode)
   }
 
   const runCode = async () => {
@@ -175,6 +190,7 @@ export default function CodeIDE({
     const defaultCodeForLanguage = defaultCode[selectedLanguage as keyof typeof defaultCode] || defaultCode.javascript
     setCode(defaultCodeForLanguage)
     onCodeChange?.(defaultCodeForLanguage)
+    onChange?.(defaultCodeForLanguage)
     setExecution(null)
     setTestResults([])
   }
@@ -199,6 +215,7 @@ export default function CodeIDE({
         const content = e.target?.result as string
         setCode(content)
         onCodeChange?.(content)
+        onChange?.(content)
       }
       reader.readAsText(file)
     }
@@ -221,6 +238,34 @@ export default function CodeIDE({
       case 'RUNNING': return <Clock className="w-4 h-4" />
       default: return <Zap className="w-4 h-4" />
     }
+  }
+
+  // If this is a simple session editor (no problem, no onRun), show simplified version
+  if (!problem && !onRun) {
+    return (
+      <div className="h-full">
+        <Editor
+          height="100%"
+          language={selectedLanguage}
+          value={code}
+          onChange={handleCodeChange}
+          onMount={handleEditorDidMount}
+          theme={theme}
+          options={{
+            minimap: { enabled: false },
+            fontSize: 14,
+            lineNumbers: 'on',
+            roundedSelection: false,
+            scrollBeyondLastLine: false,
+            automaticLayout: true,
+            wordWrap: 'on',
+            tabSize: 2,
+            insertSpaces: true,
+            detectIndentation: false,
+          }}
+        />
+      </div>
+    )
   }
 
   return (

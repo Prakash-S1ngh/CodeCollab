@@ -41,7 +41,7 @@ router.post('/profile-image', authenticateToken, upload.single('image'), async (
       req.file.buffer,
       userId
     )
-
+    console.log('Cloudinary upload result:', uploadResult)
     // Update user's avatar in database
     await prisma.user.update({
       where: { id: userId },
