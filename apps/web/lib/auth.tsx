@@ -37,7 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = async () => {
     try {
       // Just call /api/auth/me, cookies will be sent automatically
-      const response = await axios.get('/api/auth/me')
+      const response = await axios.get('/api/auth/me',{
+        withCredentials:true
+      })
+      console.log("check auth",response.data);
 
       if (response.data.success) {
         const userData = response.data.data.user
@@ -61,7 +64,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     setIsLoading(true)
     try {
-      await axios.post('/api/auth/signin', { email, password })
+      const res = await axios.post('/api/auth/signin', { email, password },
+        {
+          withCredentials:true
+        }
+      )
+      console.log(res.data);
       await checkAuth()
     } catch (error: any) {
       console.error('Sign in failed:', error)

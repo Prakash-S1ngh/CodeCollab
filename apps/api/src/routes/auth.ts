@@ -72,13 +72,13 @@ router.get('/google', (req: Request, res: Response) => {
   })(req, res)
 })
 
-router.get('/google/callback', passport.authenticate('google', { 
+router.get('/google/callback', passport.authenticate('google', {
   failureRedirect: '/auth/failure',
-  session: false 
+  session: false
 }), (req: Request, res: Response) => {
   try {
     const user = req.user as any
-    
+
     if (!user) {
       const errorResponse = createGoogleAuthResponse(false, null, 'Authentication failed - no user data')
       return res.send(errorResponse)
@@ -110,13 +110,13 @@ router.get('/google/callback', passport.authenticate('google', {
 // Google OAuth status endpoint
 router.get('/google/status', (req: Request, res: Response) => {
   const isConfigured = hasRealGoogleCredentials()
-  
+
   return res.json({
     success: true,
     data: {
       configured: isConfigured,
-      message: isConfigured 
-        ? 'Google OAuth is properly configured' 
+      message: isConfigured
+        ? 'Google OAuth is properly configured'
         : 'Google OAuth is not configured. Please set up credentials.',
       instructions: isConfigured ? null : [
         '1. Go to Google Cloud Console: https://console.cloud.google.com/',
@@ -137,7 +137,7 @@ router.post('/signup', [
   body('name').isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
   body('email').isEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 3 }).withMessage('Password must be at least 6 characters')
-], async (req: Request, res: Response):Promise<any> => {
+], async (req: Request, res: Response): Promise<any> => {
   try {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
@@ -251,20 +251,11 @@ router.post('/signup', [
 router.post('/signin', [
   body('email').isEmail().withMessage('Valid email is required'),
   body('password').notEmpty().withMessage('Password is required')
-], async (req: Request, res: Response):Promise<any> => {
+], async (req: Request, res: Response): Promise<any> => {
   try {
-    // const errors = validationResult(req)
-    // if (!errors.isEmpty()) {
-    //   res.status(400).json({
-    //     success: false,
-    //     message: 'Validation failed',
-    //     errors: errors.array()
-    //   })
-    //   return
-    // }
 
     const { email, password } = req.body
-  
+
 
     // Try to find user in database first, fallback to mock user
     let user = null
@@ -276,10 +267,10 @@ router.post('/signin', [
     } catch (error) {
       console.log('Database not available, using mock user')
     }
-    
+
     // If no user found in database, check mock users
     if (!user) {
-      console.log("user found ",user)
+      console.log("user found ", user)
       user = mockUsers.get(email)
       console.log('Mock user:', user)
     } else {
@@ -292,7 +283,7 @@ router.post('/signin', [
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials',
-        prisma:prisma.user 
+        prisma: prisma.user
       })
     }
 
@@ -323,7 +314,7 @@ router.post('/signin', [
     const accessToken = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '15m' }
+      { expiresIn: '2h' }
     )
 
     const refreshToken = jwt.sign(
@@ -331,8 +322,21 @@ router.post('/signin', [
       process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key',
       { expiresIn: '7d' }
     )
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // HTTPS in prod
+      sameSite: 'lax', // or 'none' if cross-site
+      maxAge: 2 * 60 * 60 * 1000, // 2h
+    })
 
-    return  res.json({
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+    })
+
+    return res.json({
       success: true,
       message: 'Login successful',
       data: {
@@ -363,7 +367,7 @@ router.post('/signin', [
 // Get current user
 router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user!.userId
+    const userId = req.user!.id;
     console.log('Looking for user with ID:', userId)
 
     // Try to find user in database first, fallback to mock user
@@ -395,7 +399,7 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => 
           updatedAt: true
         }
       })
-      
+
       // If user found in database, also add to mock users for consistency
       if (user) {
         mockUsers.set(user.email, user)
@@ -528,7 +532,7 @@ router.get('/test-mock-users', (req: Request, res: Response) => {
     username: user.username,
     displayName: user.displayName
   }))
-  
+
   return res.json({
     success: true,
     data: {

@@ -17,9 +17,9 @@ export const authenticateToken = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const authHeader = req.headers['authorization']
-    const token = authHeader && authHeader.split(' ')[1]
-
+    const authHeader = req.headers['authorization'];
+    console.log("headers of proj ",req.headers['authorization']);
+    let token = authHeader && authHeader.split(' ')[1];
     if (!token) {
       res.status(401).json({ 
         success: false, 
@@ -29,6 +29,7 @@ export const authenticateToken = async (
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any
+    // console.log("User h hum ",decoded);
     
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -52,8 +53,8 @@ export const authenticateToken = async (
         updatedAt: true
       }
     })
-
-    if (!user || !user.isActive) {
+    console.log("This is user in middleware",user);
+    if (!user) {
       res.status(401).json({ 
         success: false, 
         message: 'User not found or inactive' 

@@ -24,8 +24,10 @@ export async function POST(request: NextRequest) {
     })
 
     // Extract tokens from response
-    const { accessToken, refreshToken, ...rest } = response.data
-    // console.log(response.data);
+    const { accessToken, refreshToken, ...rest } = response.data.data
+    // console.log(response.data.data);
+    // console.log("accesstoken",accessToken);
+    // console.log("refreshtoken",refreshToken);
 
     const res = NextResponse.json(rest, {
       status: response.status,
@@ -35,18 +37,19 @@ export async function POST(request: NextRequest) {
     if (accessToken) {
       res.cookies.set('accessToken', accessToken, {
         httpOnly: true,
-        sameSite:'none',
+        secure: false, // false for localhost
+        sameSite: 'none', // lax for localhost
         path: '/',
-        maxAge: 60 * 60, // 1 hour
+        maxAge: 60 * 60
       })
     }
     if (refreshToken) {
       res.cookies.set('refreshToken', refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false,
         sameSite: 'none',
         path: '/',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
+        maxAge: 60 * 60 * 24 * 7
       })
     }
     return res
