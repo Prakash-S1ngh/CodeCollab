@@ -263,16 +263,16 @@ router.post('/signin', [
       user = await prisma.user.findUnique({
         where: { email }
       })
-      console.log('Database user:', user)
+      // console.log('Database user:', user)
     } catch (error) {
       console.log('Database not available, using mock user')
     }
 
     // If no user found in database, check mock users
     if (!user) {
-      console.log("user found ", user)
+      // console.log("user found ", user)
       user = mockUsers.get(email)
-      console.log('Mock user:', user)
+      // console.log('Mock user:', user)
     } else {
       // If user found in database, also add to mock users for consistency
       console.log('Adding database user to mock users:', user.id)
@@ -324,15 +324,15 @@ router.post('/signin', [
     )
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // HTTPS in prod
-      sameSite: 'lax', // or 'none' if cross-site
+      secure: true, 
+      sameSite: 'none',
       maxAge: 2 * 60 * 60 * 1000, // 2h
     })
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
     })
 
@@ -511,10 +511,22 @@ router.post('/refresh', async (req: Request, res: Response) => {
 router.post('/logout', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     // In a real application, you might want to blacklist the token
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    });
+
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    });
+
     res.json({
       success: true,
       message: 'Logged out successfully'
-    })
+    });
   } catch (error) {
     console.error('Logout error:', error)
     res.status(500).json({

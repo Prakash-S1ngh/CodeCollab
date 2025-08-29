@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
     // Read access token from cookies
     const accessToken = request.cookies.get('accessToken')?.value
     console.log("access token ",accessToken);
+    console.log("Body of session ",body);
 
     const response = await axios.post(`${API_BASE_URL}/api/sessions`, body, {
       headers: {

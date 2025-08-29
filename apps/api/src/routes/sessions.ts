@@ -54,25 +54,14 @@ router.get('/', async (req: Request, res: Response) => {
 // @route   POST /api/sessions
 // @desc    Create a new session
 // @access  Private
-router.post('/', authenticateToken, [
-  body('title').isLength({ min: 1 }).withMessage('Title is required'),
-  body('type').isIn(['MOCK_INTERVIEW', 'PRACTICE', 'COMPETITION', 'FRIENDLY']).withMessage('Invalid session type'),
-  body('maxParticipants').isInt({ min: 2, max: 10 }).withMessage('Max participants must be between 2 and 10'),
-  body('language').isLength({ min: 1 }).withMessage('Language is required'),
-  body('difficulty').isIn(['EASY', 'MEDIUM', 'HARD']).withMessage('Invalid difficulty level')
-], async (req: AuthRequest, res: Response) => {
+router.post('/', authenticateToken,  async (req: AuthRequest, res: Response) => {
   try {
-    const errors = validationResult(req)
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array()
-      })
-    }
 
-    const { title, type, maxParticipants, language, difficulty, timeLimit, challengeId, isPrivate } = req.body
-    const userId = req.user!.userId
+    const { title, type, maxParticipants, language, difficulty, timeLimit, challengeId } = req.body
+    const userId = req.user.id;
+    const isPrivate = type =='private';
+    console.log(req.body);
+    console.log("userId in createsession ",userId);
 
     // Generate unique invite code
     const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -80,7 +69,6 @@ router.post('/', authenticateToken, [
     const session = await prisma.codingSession.create({
       data: {
         title,
-        type,
         maxParticipants,
         language,
         difficulty,

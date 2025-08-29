@@ -124,16 +124,16 @@ export default function SessionsPage() {
                 const response = await axios.post('/api/sessions', {
                   ...form
                 })
-                console.log(response.data);
+                // console.log(response.data);
                 if (response.data.success) {
                   setShowCreateForm(false)
-                  setForm({ title: '', type: 'public', language: 'JavaScript', difficulty: 'Easy', maxParticipants: 2 })
+                  setForm({ title: '', type: 'public', language: 'JavaScript', difficulty: 'EASY', maxParticipants: 2 })
                   await fetchSessions()
                 } else {
-                  alert(response.data.message || 'Failed to create session')
+                  alert(response.data.message+" hello" || 'Failed to create session')
                 }
               } catch (error: any) {
-                alert(error.response?.data?.message || 'Failed to create session')
+                alert(error.response?.data?.message+" Dhoom" || 'Failed to create session')
               } finally {
                 setCreating(false)
               }
@@ -163,9 +163,9 @@ export default function SessionsPage() {
             <div className="mb-3">
               <label className="block mb-1">Difficulty</label>
               <select value={form.difficulty} onChange={e => setForm(f => ({ ...f, difficulty: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-700 text-white">
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
+                <option value="EASY">Easy</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HARD">Hard</option>
               </select>
             </div>
             <div className="mb-3">
